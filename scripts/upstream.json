@@ -1,0 +1,20 @@
+{
+  "repository": "crisp-sh/simplysusan",
+  "commit": "76e6f83ba6ec6e61aa1c5998b6fa7be71509fe9a",
+  "files": {
+    "packages/forms/package.json": "b650d9851bdebdb8ace4d57937fa2f0b34f28acb59ae2f7b561d533c69e9890e",
+    "packages/forms/src/core/form.ts": "b450060cd44fa4fbce323f88a2bbd938d8d4432ae55377531317b1b585596a6c",
+    "packages/forms/src/core/index.ts": "d8b92a67f22abb6204138cf7708ba372b9dbbb207e634c614e2429d74ef2a221",
+    "packages/forms/src/core/schema.ts": "aeb223574792dd5329d8d8eedcb34b34642f5d5b2dc5e5f301325f18ba85af72",
+    "packages/forms/src/core/types.ts": "c28aa354fe424ca240507999b65cfc7beb771268a00af4970fe4ce574b08495b",
+    "packages/forms/src/core/utils.ts": "9854be55bf76e6bfed9f07b7e1cc997ab59cc6bf5fe91e02a1a5fa3715264868",
+    "packages/forms/src/index.ts": "6878e3936f9e7687ab9571e6a93c6a98f4b14a2f6ff115cbc6b8cfb11276cd8f",
+    "packages/forms/src/prototype.ts": "ad9177302da2323499f5dd325227b6789dc3dc942814e8a1cf1d915e60402b88",
+    "packages/forms/src/react/hooks.ts": "1348759f01d2a304999249506935e5e6f13de8f85109f7739d60eb48449a4129",
+    "packages/forms/src/react/index.ts": "814a3a393d085ae3c6ee4b139704790026b55d686c319a5946b0289adc93d325",
+    "packages/forms/src/react/keybinds.ts": "ea69611a67054868af06f4df3be07e2b9cff1b6c4407bc4fc97eb588ab41a84b",
+    "packages/forms/src/react/persistence.ts": "78c135ac87debf3c906b7c9241fce4f76c93cf227cc29a869113566664fd4cc6",
+    "packages/forms/src/react/provider.tsx": "48371476b60200eaf0aa0fa80d2a4232a62e9de68fc1bcaf962ec5e64da2099e",
+    "packages/forms/tsconfig.json": "c41c26f1c70a8ba1ac071d49d03cbccdad4a1340dda3bd88c482c129b7602f96"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "crisp-forms",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev --workspace @crisp-sh/forms-example --",
+    "build": "npm run build --workspace @crisp-sh/forms-example",
+    "check-types": "npm run check-types --workspaces --if-present",
+    "check": "oxfmt --check . && oxlint .",
+    "test": "tsx --test tests/*.test.ts",
+    "verify": "npm run check && npm run check-types && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260613.1",
+    "@types/node": "22.19.21",
+    "oxfmt": "0.54.0",
+    "oxlint": "1.69.0",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3",
+    "ultracite": "7.8.3"
+  },
+  "overrides": {
+    "@tanstack/react-form": "1.33.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "tinypool": "2.1.2",
+    "typescript": "6.0.3",
+    "zod": "4.4.3"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "npm@11.13.0"
+}

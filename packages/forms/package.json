@@ -1,0 +1,24 @@
+{
+  "name": "@simplysusan/forms",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./core": "./src/core/index.ts",
+    "./react": "./src/react/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-form": "^1.33.0",
+    "react": "^19.2.6",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@simplysusan/config": "*",
+    "@types/react": "^19.2.15",
+    "typescript": "^6"
+  }
+}
