@@ -1,5 +1,3 @@
-import type z from "zod";
-
 import type {
   Dynamic,
   EvaluatedField,
@@ -14,26 +12,6 @@ import type {
 } from "./types";
 
 const FIELD_ID_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
-
-export function deriveOptions<TValues extends FormValues>(
-  field: RegisteredField<TValues>
-) {
-  const schema = field.schema as z.ZodType & {
-    options?: TValues[FieldId<TValues>][];
-  };
-  if (!schema.options) {
-    if (field.kind === "choice") {
-      throw new Error(
-        `Choice field "${field.id}" needs options or enum schema.`
-      );
-    }
-    return;
-  }
-  return schema.options.map((value) => ({
-    label: String(value),
-    value,
-  }));
-}
 
 export function formatFieldValue<TValues extends FormValues>(
   field: EvaluatedField<TValues>,
@@ -75,14 +53,15 @@ export function resolveDynamic<TValues extends FormValues, TValue>(
   return value;
 }
 
-export function validateOptions<TValues extends FormValues>(
+export async function validateOptions<TValues extends FormValues>(
   field: RegisteredField<TValues>,
   options: FieldOption<TValues[FieldId<TValues>]>[]
 ) {
-  for (const option of options) {
-    if (!field.schema.safeParse(option.value).success) {
-      throw new Error(`Option for field "${field.id}" does not match schema.`);
-    }
+  const results = await Promise.all(
+    options.map((option) => field.schema["~standard"].validate(option.value))
+  );
+  if (results.some((result) => result.issues)) {
+    throw new Error(`Option for field "${field.id}" does not match schema.`);
   }
   return options;
 }
@@ -94,27 +73,42 @@ export function validationResult(issues: ValidationIssue[]) {
   };
 }
 
-export function validateFieldValue<TValues extends FormValues>(
+export async function validateFieldValue<TValues extends FormValues>(
   field: EvaluatedField<TValues>,
   values: TValues
 ) {
-  const result = field.schema.safeParse(values[field.id]);
-  if (result.success) {
+  const result = await field.schema["~standard"].validate(values[field.id]);
+  if (!result.issues) {
     return [];
   }
-  return result.error.issues.map((issue) => ({
+  if (result.issues.length === 0) {
+    throw new Error(
+      `Schema for field "${field.id}" reported failure without an issue.`
+    );
+  }
+  return result.issues.map((issue) => ({
     field: field.id,
     message: issue.message,
     source: "field" as const,
     stepId: field.stepId,
+    path: [
+      field.id,
+      ...(issue.path ?? []).map((part) =>
+        typeof part === "object" ? part.key : part
+      ),
+    ],
   }));
 }
 
-export function validateEvaluatedField<TValues extends FormValues>(
+export async function validateEvaluatedField<TValues extends FormValues>(
   field: EvaluatedField<TValues>,
   values: TValues
 ) {
-  const schemaIssues = validateFieldValue(field, values);
+  // Never invoke validators during React render; Standard Schema may return a Promise.
+  if (field.optionsList) {
+    await validateOptions(field, field.optionsList);
+  }
+  const schemaIssues = await validateFieldValue(field, values);
   if (schemaIssues.length > 0 || !field.optionValidation) {
     return schemaIssues;
   }

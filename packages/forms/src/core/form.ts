@@ -1,5 +1,6 @@
-import z from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
+import { objectSchema } from "./standard";
 import type {
   ErrorRegionDefinition,
   EvaluatedErrorRegion,
@@ -20,13 +21,11 @@ import type {
   ValidationResult,
 } from "./types";
 import {
-  deriveOptions,
   formatFieldValue,
   normalizeStepWhen,
   requireValidFieldId,
   resolveDynamic,
   validateEvaluatedField,
-  validateOptions,
   validationResult,
 } from "./utils";
 
@@ -52,11 +51,12 @@ export class Form<TValues extends FormValues> {
     ) as TValues;
   }
 
-  get schema() {
-    return z.object(
+  /** All registered fields, including hidden fields; returns provider-transformed output. */
+  get schema(): StandardSchemaV1<TValues, Record<string, unknown>> {
+    return objectSchema(
       Object.fromEntries(
         [...this.fields.values()].map((field) => [field.id, field.schema])
-      ) as z.ZodRawShape
+      )
     );
   }
 
@@ -68,12 +68,14 @@ export class Form<TValues extends FormValues> {
     if (this.fields.has(id)) {
       throw new Error(`Duplicate field id "${id}".`);
     }
+    if (definition.kind === "choice" && !definition.options) {
+      throw new Error(`Choice field "${id}" needs explicit options.`);
+    }
     this.fields.set(id, {
       ...definition,
       clearWhenHidden: definition.clearWhenHidden ?? false,
       id,
     } as RegisteredField<TValues>);
-    this.assertStaticOptions(id);
     return this;
   }
 
@@ -142,8 +144,8 @@ export class Form<TValues extends FormValues> {
       ...field,
       labelText: resolveDynamic(field.label, scope),
       optionsList: field.options
-        ? validateOptions(field, resolveDynamic(field.options, scope))
-        : deriveOptions(field),
+        ? resolveDynamic(field.options, scope)
+        : undefined,
       placeholderText: field.placeholder
         ? resolveDynamic(field.placeholder, scope)
         : undefined,
@@ -252,34 +254,44 @@ export class Form<TValues extends FormValues> {
     return visibleSteps[currentIndex - 1] ?? null;
   }
 
-  validateStep({
+  async validateStep({
     stepId,
     values,
   }: {
     stepId: string;
     values: TValues;
-  }): ValidationResult {
-    return validationResult(
-      this.getFieldsForStep(stepId, values).flatMap((field) =>
+  }): Promise<ValidationResult> {
+    const issues = await Promise.all(
+      this.getFieldsForStep(stepId, values).map((field) =>
         validateEvaluatedField(field, values)
       )
     );
+    return validationResult(issues.flat());
   }
 
-  validateSubmit({ values }: { values: TValues }): ValidationResult {
-    const issues = [
-      ...[...this.fields.keys()].flatMap((fieldId) => {
-        if (!this.isFieldVisible(fieldId, values)) {
-          return [];
-        }
-        return validateEvaluatedField(
-          this.evaluateField(fieldId, values, this.getStepIdForField(fieldId)),
-          values
-        );
-      }),
+  async validateSubmit({
+    values,
+  }: {
+    values: TValues;
+  }): Promise<ValidationResult> {
+    const issues = await Promise.all(
+      [...this.fields.keys()]
+        .filter((fieldId) => this.isFieldVisible(fieldId, values))
+        .map((fieldId) =>
+          validateEvaluatedField(
+            this.evaluateField(
+              fieldId,
+              values,
+              this.getStepIdForField(fieldId)
+            ),
+            values
+          )
+        )
+    );
+    return validationResult([
+      ...issues.flat(),
       ...this.validateRefinements(values),
-    ];
-    return validationResult(issues);
+    ]);
   }
 
   serialize({
@@ -350,14 +362,6 @@ export class Form<TValues extends FormValues> {
 
   private getStepIdForField(fieldId: FieldId<TValues>) {
     return this.steps.find((step) => step.fields?.includes(fieldId))?.id;
-  }
-
-  private assertStaticOptions(fieldId: FieldId<TValues>) {
-    const field = this.requireField(fieldId);
-    if (!field.options || typeof field.options === "function") {
-      return;
-    }
-    validateOptions(field, field.options);
   }
 
   private isFieldVisible<TKey extends FieldId<TValues>>(

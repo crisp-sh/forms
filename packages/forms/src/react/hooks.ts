@@ -7,8 +7,8 @@ import type {
   FormValues,
   ValidationIssue,
 } from "../core";
-import type { SaveStatus, SubmitStatus } from "./provider";
-import { useFormContext } from "./provider";
+import type { SaveStatus, SubmitStatus } from "./context";
+import { useFormContext } from "./context";
 
 export interface FormErrorIssue extends ValidationIssue {
   key: string;

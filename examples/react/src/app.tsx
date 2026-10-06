@@ -1,24 +1,54 @@
-import type { FieldId } from "@simplysusan/forms";
+import type { FieldId } from "@crisp-sh/forms";
+import { FormProvider as AtomFormProvider } from "@crisp-sh/forms/atom";
 import {
   FormProvider,
   useConversationForm,
   useFieldA11y,
   useFormProgress,
-} from "@simplysusan/forms/react";
+} from "@crisp-sh/forms/react";
+import { RegistryProvider } from "@effect/atom-react";
+import { useState } from "react";
 
-import { inquiry } from "./form";
 import type { InquiryValues } from "./form";
+import { providers } from "./providers";
+import type { Provider } from "./providers";
 
 export function App() {
+  const [provider, setProvider] = useState<Provider>("zod");
+  const [integration, setIntegration] = useState<"tanstack" | "atom">(
+    "tanstack"
+  );
+  const Provider = integration === "atom" ? AtomFormProvider : FormProvider;
   // With no transport, completion stays local. Add transport.submit to connect an API.
   return (
-    <FormProvider form={inquiry} enableKeybinds={false}>
-      <Conversation />
-    </FormProvider>
+    <RegistryProvider>
+      <Provider
+        key={`${provider}:${integration}`}
+        form={providers[provider].form}
+        enableKeybinds={false}
+      >
+        <Conversation
+          provider={provider}
+          onProviderChange={setProvider}
+          integration={integration}
+          onIntegrationChange={setIntegration}
+        />
+      </Provider>
+    </RegistryProvider>
   );
 }
 
-function Conversation() {
+function Conversation({
+  provider,
+  onProviderChange,
+  integration,
+  onIntegrationChange,
+}: {
+  provider: Provider;
+  onProviderChange: (provider: Provider) => void;
+  integration: "tanstack" | "atom";
+  onIntegrationChange: (integration: "tanstack" | "atom") => void;
+}) {
   const conversation = useConversationForm<InquiryValues>();
   const progress = useFormProgress<InquiryValues>();
   const { currentStep, fields, submitStatus, serialize } = conversation;
@@ -27,14 +57,46 @@ function Conversation() {
   return (
     <main>
       <header>
-        <a className="brand" href="/">
+        <a className="brand" href={import.meta.env.BASE_URL}>
           forms<span>.</span>
         </a>
-        <span>React example</span>
+        <label className="provider">
+          Schema provider
+          <select
+            aria-label="Schema provider"
+            value={provider}
+            onChange={(event) =>
+              onProviderChange(event.target.value as Provider)
+            }
+          >
+            {Object.entries(providers).map(([key, item]) => (
+              <option key={key} value={key}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="provider">
+          React integration
+          <select
+            aria-label="React integration"
+            value={integration}
+            onChange={(event) =>
+              onIntegrationChange(event.target.value as "tanstack" | "atom")
+            }
+          >
+            <option value="tanstack">TanStack Form</option>
+            <option value="atom">Effect Atom</option>
+          </select>
+        </label>
       </header>
       <div className="workspace">
         <section aria-label="Project inquiry">
-          <p className="eyebrow">{complete ? "Complete" : progress.label}</p>
+          <p className="eyebrow">
+            {providers[provider].label} ·{" "}
+            {integration === "atom" ? "Effect Atom" : "TanStack Form"} ·{" "}
+            {complete ? "Complete" : progress.label}
+          </p>
           <progress
             aria-label="Form progress"
             max={100}
@@ -80,6 +142,14 @@ function Conversation() {
                     ))}
                   </dl>
                 )}
+                {conversation.issues
+                  .filter((issue) => !issue.field)
+                  .map((issue) => (
+                    <p key={issue.message} role="alert" className="error">
+                      {issue.message}
+                    </p>
+                  ))}
+                {conversation.isPending && <output>Validating…</output>}
                 <nav aria-label="Form navigation">
                   {conversation.canBack && (
                     <button
@@ -90,7 +160,7 @@ function Conversation() {
                       Back
                     </button>
                   )}
-                  <button type="submit">
+                  <button type="submit" disabled={conversation.isPending}>
                     {currentStep.kind === "intro"
                       ? "Start example"
                       : currentStep.kind === "review"
@@ -111,8 +181,12 @@ function Conversation() {
             Your interface.
           </h2>
           <p>
-            Typed fields, Zod validation, conditional steps, and structured
-            answers. All driven by one form definition.
+            One form, three schema providers. Validation, conditional steps, and
+            structured answers use the same Standard Schema contract.
+          </p>
+          <p>
+            Switch between TanStack Form and Effect Atom using the React
+            integration selector. Both run the same form from start to finish.
           </p>
           <p>
             Choose “My team” to reveal an extra question. Use Back to change
@@ -120,47 +194,44 @@ function Conversation() {
           </p>
           <details open={complete}>
             <summary>{complete ? "Completed payload" : "Live payload"}</summary>
-            <pre>{JSON.stringify(serialize(), null, 2)}</pre>
+            <pre data-testid="payload">
+              {JSON.stringify(serialize(), null, 2)}
+            </pre>
           </details>
         </aside>
       </div>
       <footer>
-        Built with @simplysusan/forms{" "}
-        <span>Local demo · no account required</span>
+        Built with @crisp-sh/forms{" "}
+        <span>Interactive demo · no account required</span>
       </footer>
     </main>
   );
 }
 
 function Field({ fieldId }: { fieldId: FieldId<InquiryValues> }) {
-  const { values, setValue } = useConversationForm<InquiryValues>();
+  const { values, setValue, form } = useConversationForm<InquiryValues>();
   const a11y = useFieldA11y<InquiryValues, typeof fieldId>(fieldId);
-  const field = inquiry.evaluateField(fieldId, values);
+  const field = form.evaluateField(fieldId, values);
 
   if (fieldId === "audience") {
     return (
       <fieldset>
         <legend>{field.labelText}</legend>
-        {inquiry
-          .evaluateField("audience", values)
-          .optionsList?.map((option) => (
-            <label className="choice" key={String(option.value)}>
-              <input
-                type="radio"
-                aria-label={option.label}
-                name="audience"
-                value={String(option.value)}
-                checked={values.audience === option.value}
-                onChange={() =>
-                  setValue(
-                    "audience",
-                    option.value as InquiryValues["audience"]
-                  )
-                }
-              />
-              {option.label}
-            </label>
-          ))}
+        {form.evaluateField("audience", values).optionsList?.map((option) => (
+          <label className="choice" key={String(option.value)}>
+            <input
+              type="radio"
+              aria-label={option.label}
+              name="audience"
+              value={String(option.value)}
+              checked={values.audience === option.value}
+              onChange={() =>
+                setValue("audience", option.value as InquiryValues["audience"])
+              }
+            />
+            {option.label}
+          </label>
+        ))}
       </fieldset>
     );
   }

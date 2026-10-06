@@ -9,13 +9,15 @@
   "scripts": {
     "dev": "npm run dev --workspace @crisp-sh/forms-example --",
     "build": "npm run build --workspace @crisp-sh/forms-example",
-    "check-types": "npm run check-types --workspaces --if-present",
+    "check-types": "npm run check-types --workspaces --if-present && tsc -p tsconfig.tests.json",
     "check": "oxfmt --check . && oxlint .",
     "test": "tsx --test tests/*.test.ts",
-    "verify": "npm run check && npm run check-types && npm test && npm run build"
+    "test:e2e": "playwright test",
+    "verify": "npm run check && npm run check-types && npm test && npm run build && npm run test:e2e"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20260613.1",
+    "@playwright/test": "1.63.0",
     "@types/node": "22.19.21",
     "oxfmt": "0.54.0",
     "oxlint": "1.69.0",

@@ -9,9 +9,13 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@simplysusan/forms": "*",
+    "@crisp-sh/forms": "*",
+    "@effect/atom-react": "4.0.1",
+    "@tanstack/react-form": "1.33.0",
+    "effect": "4.0.1",
     "react": "19.2.7",
     "react-dom": "19.2.7",
+    "typebox": "1.3.36",
     "zod": "4.4.3"
   },
   "devDependencies": {

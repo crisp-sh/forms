@@ -1,8 +1,7 @@
-import z from "zod";
-
 // PROTOTYPE - delete or absorb into packages/forms/core.
 // Question: Does the generic field/step/when flow resolver feel right before React?
-import { Form } from "./core";
+import { Form } from "@crisp-sh/forms";
+import z from "zod";
 
 interface ScheduleValues extends Record<string, unknown> {
   joiningPeople: { name: string }[];
@@ -146,16 +145,16 @@ setValue("willAnyoneJoin", false);
 printState("hidden value persists");
 printValidation(
   "current phone validation",
-  schedule.validateStep({ stepId: "askPhone", values })
+  await schedule.validateStep({ stepId: "askPhone", values })
 );
 printValidation(
   "submit visible validation",
-  schedule.validateSubmit({ values })
+  await schedule.validateSubmit({ values })
 );
 values = { ...values, neighborhood: "dilwroth" };
 printValidation(
   "option suggestion validation",
-  schedule.validateStep({ stepId: "askNeighborhood", values })
+  await schedule.validateStep({ stepId: "askNeighborhood", values })
 );
 
 function goTo(stepId: string) {

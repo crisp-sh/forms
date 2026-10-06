@@ -1,4 +1,4 @@
-import type z from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 export type FormValues = Record<string, unknown>;
 export type FieldId<TValues extends FormValues> = Extract<
@@ -79,7 +79,8 @@ export interface FieldDefinition<
   optionValidation?: FieldOptionValidation;
   options?: Dynamic<TValues, FieldOption<TValues[TKey]>[]>;
   placeholder?: Dynamic<TValues, string>;
-  schema: z.ZodType<TValues[TKey]>;
+  /** Validates the editable input; schema transformations do not mutate form state. */
+  schema: StandardSchemaV1<TValues[TKey], unknown>;
   serialize?: (
     value: TValues[TKey],
     form: FormScope<TValues>
@@ -96,7 +97,7 @@ export interface RegisteredField<TValues extends FormValues> {
   optionValidation?: FieldOptionValidation;
   options?: Dynamic<TValues, FieldOption<TValues[FieldId<TValues>]>[]>;
   placeholder?: Dynamic<TValues, string>;
-  schema: z.ZodType<TValues[FieldId<TValues>]>;
+  schema: StandardSchemaV1<TValues[FieldId<TValues>], unknown>;
   serialize?: (
     value: TValues[FieldId<TValues>],
     form: FormScope<TValues>
@@ -139,6 +140,8 @@ export interface EvaluatedField<
 }
 
 export interface ValidationIssue {
+  /** Field id followed by the provider's normalized nested issue path. */
+  path?: readonly PropertyKey[];
   field?: string;
   source?: ValidationIssueSource;
   stepId?: string;

@@ -1,24 +1,24 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
 
-import upstream from "../scripts/upstream.json";
+import manifest from "../packages/forms/package.json";
 
-test("the extracted forms package remains byte-for-byte identical to upstream", () => {
-  const paths = readdirSync("packages/forms", {
+test("the core has no schema-provider dependency or source imports", () => {
+  for (const dependency of ["zod", "effect", "typebox", "@sinclair/typebox"]) {
+    assert.equal(Object.hasOwn(manifest.dependencies, dependency), false);
+  }
+  const paths = readdirSync("packages/forms/src/core", {
     recursive: true,
     withFileTypes: true,
   })
     .filter((entry) => entry.isFile())
     .map((entry) => `${entry.parentPath}/${entry.name}`)
     .toSorted();
-  assert.deepEqual(paths, Object.keys(upstream.files).toSorted());
-  for (const [path, expected] of Object.entries(upstream.files)) {
-    assert.equal(
-      createHash("sha256").update(readFileSync(path)).digest("hex"),
-      expected,
-      path
+  for (const path of paths) {
+    assert.doesNotMatch(
+      readFileSync(path, "utf-8"),
+      /(?:from\s*|import\s*\()["'](?:zod|effect|typebox|@sinclair\/typebox)(?:["'/])/
     );
   }
 });
